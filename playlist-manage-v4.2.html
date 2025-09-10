@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歌单管理器</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3f7;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            gap: 20px;
+        }
+
+        /* 顶部控制区 */
+        .control-panel {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 歌单管理区域 */
+        .playlist-management {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .playlist-selector {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .playlist-selector select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .playlist-selector select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .playlist-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+        }
+
+        .btn-danger {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 添加歌曲区域 */
+        .add-song-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .add-btn {
+            padding: 12px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 700;
+            min-width: 120px;
+        }
+
+        .add-btn:hover {
+            background-color: #29b6f6;
+        }
+
+        /* 搜索与排序区域 */
+        .search-sort-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--card-bg);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .sort-btn {
+            padding: 10px 15px;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .sort-btn:hover, .sort-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* 歌曲列表区域 */
+        .song-list-section {
+            flex: 1;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .list-header {
+            padding: 20px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .list-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .song-table {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--secondary-color);
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+        th:hover {
+            background-color: #eef2f6;
+        }
+
+        th.sortable::after {
+            content: ' ↕';
+            font-size: 12px;
+            color: #999;
+            margin-left: 5px;
+        }
+
+        th.asc::after {
+            content: ' ↑';
+            color: var(--primary-color);
+        }
+
+        th.desc::after {
+            content: ' ↓';
+            color: var(--primary-color);
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .song-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: color 0.3s;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .action-btn:hover {
+            color: var(--error-color);
+            background-color: #ffebee;
+        }
+
+        .drag-handle {
+            cursor: move;
+            color: #999;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .drag-handle:hover {
+            background-color: #f0f0f0;
+            color: #666;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .control-panel {
+                padding: 15px;
+            }
+            
+            .add-song-section, .search-sort-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .input-group {
+                min-width: 100%;
+            }
+            
+            .search-box {
+                min-width: 100%;
+            }
+            
+            .playlist-selector {
+                min-width: 100%;
+            }
+            
+            .btn {
+                flex: 1;
+                min-width: 100px;
+                justify-content: center;
+            }
+            
+            th, td {
+                padding: 10px 8px;
+                font-size: 14px;
+            }
+        }
+
+        /* Toast通知 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(150%);
+            transition: transform 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background-color: var(--success-color);
+        }
+
+        .toast.error {
+            background-color: var(--error-color);
+        }
+
+        .toast.warning {
+            background-color: var(--warning-color);
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        .spinner {
+            border: 4px solid rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 500px;
+            transform: translateY(-20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.show .modal {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal-input {
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn-cancel {
+            background: #e0e0e0;
+            color: var(--text-color);
+        }
+
+        .modal-btn-confirm {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #d0d0d0;
+        }
+
+        .modal-btn-confirm:hover {
+            background: var(--secondary-color);
+        }
+
+        /* 未保存提示 */
+        .unsaved-indicator {
+            color: var(--warning-color);
+            font-weight: bold;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <!-- 歌单管理 -->
+            <div class="playlist-management">
+                <div class="playlist-selector">
+                    <select id="playlistSelect" disabled>
+                        <option value="">请选择歌单</option>
+                    </select>
+                </div>
+                <div class="playlist-actions">
+                    <button id="newPlaylistBtn" class="btn btn-primary" disabled>
+                        <span>新建歌单</span>
+                    </button>
+                    <button id="renamePlaylistBtn" class="btn btn-secondary" disabled>
+                        <span>重命名</span>
+                    </button>
+                    <button id="deletePlaylistBtn" class="btn btn-danger" disabled>
+                        <span>删除</span>
+                    </button>
+                    <button id="saveBtn" class="btn btn-primary" disabled>
+                        <span>保存</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 添加歌曲 -->
+            <div class="add-song-section">
+                <div class="input-group">
+                    <label for="songName">歌曲名</label>
+                    <input type="text" id="songName" placeholder="请输入歌曲名" disabled>
+                </div>
+                <div class="input-group">
+                    <label for="artist">歌手</label>
+                    <input type="text" id="artist" placeholder="请输入歌手" disabled>
+                </div>
+                <div class="input-group">
+                    <label for="album">专辑</label>
+                    <input type="text" id="album" placeholder="请输入专辑" disabled>
+                </div>
+                <div class="input-group">
+                    <label for="duration">时长</label>
+                    <input type="text" id="duration" placeholder="如: 3:45" disabled>
+                </div>
+                <button id="addSongBtn" class="btn add-btn" disabled>
+                    <span>添加歌曲</span>
+                </button>
+            </div>
+
+            <!-- 搜索与排序 -->
+            <div class="search-sort-section">
+                <div class="search-box">
+                    <span class="search-icon"></span>
+                    <input type="text" id="searchInput" placeholder="搜索歌曲..." disabled>
+                </div>
+                <div class="sort-controls">
+                    <button class="sort-btn" data-sort="time" disabled>按添加时间</button>
+                    <button class="sort-btn" data-sort="name" disabled>按歌名</button>
+                    <button class="sort-btn" data-sort="artist" disabled>按歌手</button>
+                    <button class="sort-btn" data-sort="album" disabled>按专辑</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 歌曲列表 -->
+        <div class="song-list-section">
+            <div class="list-header">
+                <h2 class="list-title" id="playlistTitle">请选择歌单</h2>
+            </div>
+            <div class="song-table">
+                <table id="songTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="index">序号</th>
+                            <th class="sortable" data-sort="name">歌曲名</th>
+                            <th class="sortable" data-sort="artist">歌手</th>
+                            <th class="sortable" data-sort="album">专辑</th>
+                            <th class="sortable" data-sort="duration">时长</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="songList">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                请先选择或创建一个歌单
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast通知 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 新建歌单模态框 -->
+    <div id="newPlaylistModal" class="modal-overlay">
+        <div class="modal">
+            <h3 class="modal-title">新建歌单</h3>
+            <div class="modal-form">
+                <input type="text" id="newPlaylistName" class="modal-input" placeholder="请输入歌单名称">
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-cancel" id="cancelNewPlaylist">取消</button>
+                    <button class="modal-btn modal-btn-confirm" id="confirmNewPlaylist">创建</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重命名歌单模态框 -->
+    <div id="renamePlaylistModal" class="modal-overlay">
+        <div class="modal">
+            <h3 class="modal-title">重命名歌单</h3>
+            <div class="modal-form">
+                <input type="text" id="renamePlaylistName" class="modal-input" placeholder="请输入新名称">
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-cancel" id="cancelRenamePlaylist">取消</button>
+                    <button class="modal-btn modal-btn-confirm" id="confirmRenamePlaylist">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="deleteConfirmModal" class="modal-overlay">
+        <div class="modal">
+            <h3 class="modal-title">确认删除</h3>
+            <p id="deleteConfirmText" style="margin-bottom: 20px;">您确定要删除歌单 "<span id="playlistToDeleteName"></span>" 吗？此操作不可撤销！</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" id="cancelDeletePlaylist">取消</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmDeletePlaylist">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 应用状态管理
+        class PlaylistManager {
+            constructor() {
+                this.db = null;
+                this.directoryHandle = null;
+                this.playlists = []; // 歌单元数据数组
+                this.currentPlaylist = null; // 当前歌单元数据
+                this.currentSongs = []; // 当前歌单歌曲列表
+                this.isDirty = false; // 是否有未保存的更改
+                this.sortConfig = { key: 'index', order: 'asc' }; // 排序配置
+                this.searchTerm = ''; // 搜索关键词
+                
+                // 初始化
+                this.init();
+            }
+
+            async init() {
+                try {
+                    // 初始化IndexedDB
+                    await this.initIndexedDB();
+                    
+                    // 尝试恢复上次的项目目录
+                    await this.restoreLastProject();
+                    
+                    // 绑定事件
+                    this.bindEvents();
+                    
+                    // 显示欢迎消息或加载状态
+                    if (!this.directoryHandle) {
+                        this.showToast('请先选择歌单保存文件夹', 'warning');
+                        // 不再自动调用selectProjectDirectory，而是等待用户点击按钮
+                        this.showSelectDirectoryPrompt();
+                    } else {
+                        await this.loadPlaylists();
+                    }
+                } catch (error) {
+                    console.error('初始化失败:', error);
+                    this.showToast('初始化失败: ' + error.message, 'error');
+                }
+            }
+
+            // 初始化IndexedDB
+            async initIndexedDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open('PlaylistManagerDB', 2);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // 创建存储对象
+                        if (!db.objectStoreNames.contains('project')) {
+                            db.createObjectStore('project', { keyPath: 'id' });
+                        }
+                        
+                        if (!db.objectStoreNames.contains('playlists')) {
+                            const playlistStore = db.createObjectStore('playlists', { keyPath: 'fileName' });
+                            playlistStore.createIndex('playlistName', 'playlistName', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            // 保存项目目录到IndexedDB
+            async saveProjectDirectory(directoryHandle) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['project'], 'readwrite');
+                    const store = transaction.objectStore('project');
+                    
+                    const projectData = {
+                        id: 'current_project',
+                        directoryHandle: directoryHandle,
+                        lastAccessed: Date.now()
+                    };
+                    
+                    const request = store.put(projectData);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 从IndexedDB恢复项目目录
+            async restoreLastProject() {
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        const transaction = this.db.transaction(['project'], 'readonly');
+                        const store = transaction.objectStore('project');
+                        const request = store.get('current_project');
+                        
+                        request.onsuccess = async () => {
+                            if (request.result && request.result.directoryHandle) {
+                                try {
+                                    // 验证目录权限
+                                    const permission = await request.result.directoryHandle.queryPermission({ mode: 'readwrite' });
+                                    if (permission === 'granted') {
+                                        this.directoryHandle = request.result.directoryHandle;
+                                        console.log('成功恢复项目目录');
+                                    } else {
+                                        console.log('需要重新请求目录权限');
+                                        this.directoryHandle = null;
+                                    }
+                                } catch (err) {
+                                    console.log('目录权限验证失败:', err);
+                                    this.directoryHandle = null;
+                                }
+                            }
+                            resolve();
+                        };
+                        
+                        request.onerror = () => {
+                            reject(request.error);
+                        };
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+
+            // 选择项目目录
+            async selectProjectDirectory() {
+                try {
+                    this.directoryHandle = await window.showDirectoryPicker({
+                        id: 'playlist-project-directory',
+                        startIn: 'documents',
+                        mode: 'readwrite'
+                    });
+                    
+                    // 保存到IndexedDB
+                    await this.saveProjectDirectory(this.directoryHandle);
+                    
+                    // 加载歌单列表
+                    await this.loadPlaylists();
+                    
+                    this.showToast('项目目录设置成功', 'success');
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        this.showToast('取消选择目录', 'warning');
+                    } else {
+                        this.showToast('选择目录失败: ' + error.message, 'error');
+                    }
+                    throw error;
+                }
+            }
+
+            // 加载所有歌单
+            async loadPlaylists() {
+                if (!this.directoryHandle) {
+                    this.showToast('请先选择项目目录', 'warning');
+                    return;
+                }
+                
+                try {
+                    this.playlists = [];
+                    
+                    // 从文件系统读取所有.json文件
+                    for await (const entry of this.directoryHandle.values()) {
+                        if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                            try {
+                                const file = await entry.getFile();
+                                const metadata = {
+                                    fileName: entry.name,
+                                    playlistName: entry.name.replace('.json', ''),
+                                    lastModified: file.lastModified,
+                                    fileHandle: entry
+                                };
+                                this.playlists.push(metadata);
+                            } catch (error) {
+                                console.warn(`读取文件 ${entry.name} 失败:`, error);
+                            }
+                        }
+                    }
+                    
+                    // 从IndexedDB加载元数据（用于显示名称等）
+                    const dbPlaylists = await this.loadPlaylistsFromDB();
+                    const playlistMap = {};
+                    
+                    // 创建映射
+                    dbPlaylists.forEach(dbPlaylist => {
+                        playlistMap[dbPlaylist.fileName] = dbPlaylist;
+                    });
+                    
+                    // 合并数据
+                    this.playlists = this.playlists.map(filePlaylist => {
+                        const dbPlaylist = playlistMap[filePlaylist.fileName];
+                        if (dbPlaylist) {
+                            return {
+                                ...filePlaylist,
+                                playlistName: dbPlaylist.playlistName,
+                                lastModified: Math.max(filePlaylist.lastModified, dbPlaylist.lastModified)
+                            };
+                        }
+                        return filePlaylist;
+                    });
+                    
+                    // 按最后修改时间排序
+                    this.playlists.sort((a, b) => b.lastModified - a.lastModified);
+                    
+                    // 更新UI
+                    this.updatePlaylistSelector();
+                    
+                    // 如果有歌单，加载第一个或上次使用的歌单
+                    if (this.playlists.length > 0) {
+                        // 尝试恢复上次使用的歌单
+                        const lastPlaylist = await this.getLastUsedPlaylist();
+                        if (lastPlaylist) {
+                            const found = this.playlists.find(p => p.fileName === lastPlaylist);
+                            if (found) {
+                                await this.loadPlaylist(found);
+                                return;
+                            }
+                        }
+                        // 默认加载第一个
+                        await this.loadPlaylist(this.playlists[0]);
+                    } else {
+                        // 没有歌单，提示创建
+                        this.clearSongList();
+                        this.updatePlaylistTitle('暂无歌单');
+                        this.showToast('请创建第一个歌单', 'info');
+                    }
+                    
+                    // 启用相关按钮
+                    this.enableControls();
+                    
+                } catch (error) {
+                    console.error('加载歌单失败:', error);
+                    this.showToast('加载歌单失败: ' + error.message, 'error');
+                }
+            }
+
+            // 从IndexedDB加载歌单元数据
+            async loadPlaylistsFromDB() {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['playlists'], 'readonly');
+                    const store = transaction.objectStore('playlists');
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 保存歌单元数据到IndexedDB
+            async savePlaylistMetadata(metadata) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['playlists'], 'readwrite');
+                    const store = transaction.objectStore('playlists');
+                    const request = store.put(metadata);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 获取上次使用的歌单
+            async getLastUsedPlaylist() {
+                return new Promise((resolve) => {
+                    const transaction = this.db.transaction(['project'], 'readonly');
+                    const store = transaction.objectStore('project');
+                    const request = store.get('current_project');
+                    
+                    request.onsuccess = () => {
+                        if (request.result && request.result.lastPlaylist) {
+                            resolve(request.result.lastPlaylist);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    
+                    request.onerror = () => resolve(null);
+                });
+            }
+
+            // 保存上次使用的歌单
+            async saveLastUsedPlaylist(fileName) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['project'], 'readwrite');
+                    const store = transaction.objectStore('project');
+                    const request = store.get('current_project');
+                    
+                    request.onsuccess = () => {
+                        const projectData = request.result || { id: 'current_project' };
+                        projectData.lastPlaylist = fileName;
+                        projectData.lastAccessed = Date.now();
+                        
+                        const putRequest = store.put(projectData);
+                        putRequest.onsuccess = () => resolve();
+                        putRequest.onerror = () => reject(putRequest.error);
+                    };
+                    
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 新建歌单
+            async createPlaylist(name) {
+                if (!name || name.trim() === '') {
+                    throw new Error('歌单名称不能为空');
+                }
+                
+                if (!this.directoryHandle) {
+                    throw new Error('请先选择项目目录');
+                }
+                
+                // 清理文件名
+                const sanitizedFileName = this.sanitizeFileName(name) + '.json';
+                
+                // 检查是否已存在
+                if (this.playlists.some(p => p.fileName === sanitizedFileName)) {
+                    throw new Error('歌单名称已存在');
+                }
+                
+                try {
+                    // 创建文件句柄
+                    const fileHandle = await this.directoryHandle.getFileHandle(sanitizedFileName, { create: true });
+                    
+                    // 创建空歌单结构
+                    const emptyPlaylist = {
+                        name: name.trim(),
+                        songs: [],
+                        createdAt: Date.now(),
+                        lastModified: Date.now()
+                    };
+                    
+                    // 写入文件
+                    await this.writeFile(fileHandle, JSON.stringify(emptyPlaylist, null, 2));
+                    
+                    // 创建元数据
+                    const metadata = {
+                        fileName: sanitizedFileName,
+                        playlistName: name.trim(),
+                        lastModified: Date.now(),
+                        fileHandle: fileHandle
+                    };
+                    
+                    // 保存到IndexedDB
+                    await this.savePlaylistMetadata(metadata);
+                    
+                    // 添加到列表
+                    this.playlists.push(metadata);
+                    
+                    // 更新UI
+                    this.updatePlaylistSelector();
+                    
+                    // 切换到新歌单
+                    await this.loadPlaylist(metadata);
+                    
+                    this.showToast(`歌单 "${name}" 创建成功`, 'success');
+                    
+                    return metadata;
+                } catch (error) {
+                    throw new Error('创建歌单失败: ' + error.message);
+                }
+            }
+
+            // 重命名歌单
+            async renamePlaylist(oldMetadata, newName) {
+                if (!newName || newName.trim() === '') {
+                    throw new Error('新歌单名称不能为空');
+                }
+                
+                const newFileName = this.sanitizeFileName(newName) + '.json';
+                
+                // 检查是否已存在同名文件
+                if (this.playlists.some(p => p.fileName === newFileName && p !== oldMetadata)) {
+                    throw new Error('歌单名称已存在');
+                }
+                
+                try {
+                    // 读取原文件内容
+                    const file = await oldMetadata.fileHandle.getFile();
+                    const content = await file.text();
+                    const playlistData = JSON.parse(content);
+                    
+                    // 更新歌单名称
+                    playlistData.name = newName.trim();
+                    playlistData.lastModified = Date.now();
+                    
+                    // 创建新文件
+                    const newFileHandle = await this.directoryHandle.getFileHandle(newFileName, { create: true });
+                    
+                    // 写入新文件
+                    await this.writeFile(newFileHandle, JSON.stringify(playlistData, null, 2));
+                    
+                    // 删除原文件
+                    await this.directoryHandle.removeEntry(oldMetadata.fileName);
+                    
+                    // 更新元数据
+                    const newMetadata = {
+                        fileName: newFileName,
+                        playlistName: newName.trim(),
+                        lastModified: Date.now(),
+                        fileHandle: newFileHandle
+                    };
+                    
+                    // 保存到IndexedDB
+                    await this.savePlaylistMetadata(newMetadata);
+                    
+                    // 从列表中移除旧的，添加新的
+                    this.playlists = this.playlists.filter(p => p !== oldMetadata);
+                    this.playlists.push(newMetadata);
+                    
+                    // 如果当前正在编辑这个歌单，更新当前歌单
+                    if (this.currentPlaylist && this.currentPlaylist.fileName === oldMetadata.fileName) {
+                        this.currentPlaylist = newMetadata;
+                        this.currentSongs = playlistData.songs || [];
+                        this.updatePlaylistTitle();
+                    }
+                    
+                    // 更新UI
+                    this.updatePlaylistSelector();
+                    
+                    this.showToast(`歌单重命名为 "${newName}"`, 'success');
+                    
+                    return newMetadata;
+                } catch (error) {
+                    throw new Error('重命名歌单失败: ' + error.message);
+                }
+            }
+
+            // 删除歌单
+            async deletePlaylist(metadata) {
+                if (!confirm(`确定要删除歌单 "${metadata.playlistName}" 吗？此操作不可撤销！`)) {
+                    return false;
+                }
+                
+                try {
+                    // 删除文件
+                    if (metadata.fileHandle) {
+                        await this.directoryHandle.removeEntry(metadata.fileName);
+                    }
+                    
+                    // 从IndexedDB删除元数据
+                    await this.deletePlaylistMetadata(metadata.fileName);
+                    
+                    // 从列表中移除
+                    this.playlists = this.playlists.filter(p => p !== metadata);
+                    
+                    // 更新UI
+                    this.updatePlaylistSelector();
+                    
+                    // 如果删除的是当前歌单
+                    if (this.currentPlaylist && this.currentPlaylist.fileName === metadata.fileName) {
+                        if (this.playlists.length > 0) {
+                            await this.loadPlaylist(this.playlists[0]);
+                        } else {
+                            this.clearSongList();
+                            this.updatePlaylistTitle('暂无歌单');
+                            this.showToast('请创建新的歌单', 'info');
+                        }
+                    }
+                    
+                    this.showToast(`歌单 "${metadata.playlistName}" 已删除`, 'success');
+                    return true;
+                } catch (error) {
+                    throw new Error('删除歌单失败: ' + error.message);
+                }
+            }
+
+            // 从IndexedDB删除歌单元数据
+            async deletePlaylistMetadata(fileName) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['playlists'], 'readwrite');
+                    const store = transaction.objectStore('playlists');
+                    const request = store.delete(fileName);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 加载歌单内容
+            async loadPlaylist(metadata) {
+                if (!metadata || !metadata.fileHandle) {
+                    throw new Error('无效的歌单');
+                }
+                
+                try {
+                    // 读取文件
+                    const file = await metadata.fileHandle.getFile();
+                    const content = await file.text();
+                    const playlistData = JSON.parse(content);
+                    
+                    // 更新当前状态
+                    this.currentPlaylist = metadata;
+                    this.currentSongs = playlistData.songs || [];
+                    this.isDirty = false;
+                    
+                    // 保存最后使用的歌单
+                    await this.saveLastUsedPlaylist(metadata.fileName);
+                    
+                    // 更新UI
+                    this.updatePlaylistTitle();
+                    this.renderSongList();
+                    this.updateSaveButton();
+                    
+                    this.showToast(`已加载歌单: ${metadata.playlistName}`, 'success');
+                } catch (error) {
+                    throw new Error('加载歌单失败: ' + error.message);
+                }
+            }
+
+            // 保存当前歌单
+            async saveCurrentPlaylist() {
+                if (!this.currentPlaylist || !this.currentPlaylist.fileHandle) {
+                    this.showToast('没有可保存的歌单', 'warning');
+                    return false;
+                }
+                
+                try {
+                    // 构建歌单数据
+                    const playlistData = {
+                        name: this.currentPlaylist.playlistName,
+                        songs: this.currentSongs,
+                        lastModified: Date.now(),
+                        songCount: this.currentSongs.length
+                    };
+                    
+                    // 写入文件
+                    await this.writeFile(this.currentPlaylist.fileHandle, JSON.stringify(playlistData, null, 2));
+                    
+                    // 更新元数据
+                    const updatedMetadata = {
+                        ...this.currentPlaylist,
+                        lastModified: Date.now()
+                    };
+                    
+                    // 保存到IndexedDB
+                    await this.savePlaylistMetadata(updatedMetadata);
+                    
+                    // 更新当前歌单
+                    this.currentPlaylist = updatedMetadata;
+                    
+                    // 更新歌单列表中的数据
+                    const index = this.playlists.findIndex(p => p.fileName === this.currentPlaylist.fileName);
+                    if (index !== -1) {
+                        this.playlists[index] = updatedMetadata;
+                        this.updatePlaylistSelector();
+                    }
+                    
+                    this.isDirty = false;
+                    this.updateSaveButton();
+                    this.showToast('歌单保存成功', 'success');
+                    
+                    return true;
+                } catch (error) {
+                    this.showToast('保存失败: ' + error.message, 'error');
+                    return false;
+                }
+            }
+
+            // 写入文件（使用File System Access API）
+            async writeFile(fileHandle, content) {
+                const writable = await fileHandle.createWritable();
+                await writable.write(content);
+                await writable.close();
+            }
+
+            // 添加歌曲
+            addSong(songName, artist, album, duration) {
+                if (!songName || songName.trim() === '') {
+                    throw new Error('歌曲名称不能为空');
+                }
+                
+                const newSong = {
+                    id: Date.now() + Math.random().toString(36).substr(2, 9),
+                    name: songName.trim(),
+                    artist: artist ? artist.trim() : '',
+                    album: album ? album.trim() : '',
+                    duration: duration ? duration.trim() : '',
+                    addedAt: Date.now()
+                };
+                
+                this.currentSongs.push(newSong);
+                this.isDirty = true;
+                this.updateSaveButton();
+                this.renderSongList();
+                
+                this.showToast('歌曲添加成功', 'success');
+                
+                // 清空输入框
+                document.getElementById('songName').value = '';
+                document.getElementById('artist').value = '';
+                document.getElementById('album').value = '';
+                document.getElementById('duration').value = '';
+                
+                // 聚焦回歌名输入框
+                document.getElementById('songName').focus();
+            }
+
+            // 删除歌曲
+            deleteSong(songId) {
+                const index = this.currentSongs.findIndex(song => song.id === songId);
+                if (index !== -1) {
+                    const deletedSong = this.currentSongs.splice(index, 1)[0];
+                    this.isDirty = true;
+                    this.updateSaveButton();
+                    this.renderSongList();
+                    this.showToast(`已删除歌曲: ${deletedSong.name}`, 'success');
+                }
+            }
+
+            // 编辑歌曲
+            editSong(songId, updates) {
+                const song = this.currentSongs.find(s => s.id === songId);
+                if (song) {
+                    Object.assign(song, updates);
+                    song.updatedAt = Date.now();
+                    this.isDirty = true;
+                    this.updateSaveButton();
+                    this.renderSongList();
+                    this.showToast('歌曲更新成功', 'success');
+                }
+            }
+
+            // 搜索过滤
+            filterSongs() {
+                this.renderSongList();
+            }
+
+            // 排序歌曲
+            sortSongs(sortKey, sortOrder = 'asc') {
+                this.sortConfig = { key: sortKey, order: sortOrder };
+                
+                this.currentSongs.sort((a, b) => {
+                    let aValue, bValue;
+                    
+                    switch (sortKey) {
+                        case 'index':
+                            aValue = this.currentSongs.indexOf(a);
+                            bValue = this.currentSongs.indexOf(b);
+                            break;
+                        case 'name':
+                            aValue = a.name.toLowerCase();
+                            bValue = b.name.toLowerCase();
+                            break;
+                        case 'artist':
+                            aValue = (a.artist || '').toLowerCase();
+                            bValue = (b.artist || '').toLowerCase();
+                            break;
+                        case 'album':
+                            aValue = (a.album || '').toLowerCase();
+                            bValue = (b.album || '').toLowerCase();
+                            break;
+                        case 'duration':
+                            aValue = a.duration || '';
+                            bValue = b.duration || '';
+                            break;
+                        case 'time':
+                            aValue = a.addedAt || 0;
+                            bValue = b.addedAt || 0;
+                            break;
+                        default:
+                            return 0;
+                    }
+                    
+                    if (typeof aValue === 'string' && typeof bValue === 'string') {
+                        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+                        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+                        return 0;
+                    } else {
+                        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+                        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+                        return 0;
+                    }
+                });
+                
+                this.renderSongList();
+                this.updateSortButtons();
+            }
+
+            // 文件名安全处理
+            sanitizeFileName(name) {
+                return name.trim().replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').substring(0, 100);
+            }
+
+            // 更新歌单选择器
+            updatePlaylistSelector() {
+                const select = document.getElementById('playlistSelect');
+                select.innerHTML = '<option value="">请选择歌单</option>';
+                
+                this.playlists.forEach(playlist => {
+                    const option = document.createElement('option');
+                    option.value = playlist.fileName;
+                    option.textContent = playlist.playlistName;
+                    if (this.currentPlaylist && playlist.fileName === this.currentPlaylist.fileName) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+
+            // 更新歌单标题
+            updatePlaylistTitle() {
+                if (!this.currentPlaylist) {
+                    document.getElementById('playlistTitle').textContent = '请选择歌单';
+                    return;
+                }
+                
+                const title = `${this.currentPlaylist.playlistName} (共 ${this.currentSongs.length} 首)`;
+                document.getElementById('playlistTitle').textContent = title;
+            }
+
+            // 渲染歌曲列表
+            renderSongList() {
+                const tbody = document.getElementById('songList');
+                
+                if (!this.currentPlaylist) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                请先选择或创建一个歌单
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                if (this.currentSongs.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                                歌单为空，点击"添加歌曲"开始添加
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // 应用搜索过滤
+                let filteredSongs = this.currentSongs;
+                if (this.searchTerm) {
+                    const term = this.searchTerm.toLowerCase();
+                    filteredSongs = this.currentSongs.filter(song => 
+                        song.name.toLowerCase().includes(term) ||
+                        (song.artist && song.artist.toLowerCase().includes(term)) ||
+                        (song.album && song.album.toLowerCase().includes(term))
+                    );
+                }
+                
+                // 应用排序
+                const { key, order } = this.sortConfig;
+                filteredSongs = [...filteredSongs]; // 创建副本避免修改原数组
+                
+                filteredSongs.sort((a, b) => {
+                    let aValue, bValue;
+                    
+                    switch (key) {
+                        case 'index':
+                            aValue = this.currentSongs.indexOf(a);
+                            bValue = this.currentSongs.indexOf(b);
+                            break;
+                        case 'name':
+                            aValue = a.name.toLowerCase();
+                            bValue = b.name.toLowerCase();
+                            break;
+                        case 'artist':
+                            aValue = (a.artist || '').toLowerCase();
+                            bValue = (b.artist || '').toLowerCase();
+                            break;
+                        case 'album':
+                            aValue = (a.album || '').toLowerCase();
+                            bValue = (b.album || '').toLowerCase();
+                            break;
+                        case 'duration':
+                            aValue = a.duration || '';
+                            bValue = b.duration || '';
+                            break;
+                        case 'time':
+                            aValue = a.addedAt || 0;
+                            bValue = b.addedAt || 0;
+                            break;
+                        default:
+                            return 0;
+                    }
+                    
+                    if (typeof aValue === 'string' && typeof bValue === 'string') {
+                        if (aValue < bValue) return order === 'asc' ? -1 : 1;
+                        if (aValue > bValue) return order === 'asc' ? 1 : -1;
+                        return 0;
+                    } else {
+                        if (aValue < bValue) return order === 'asc' ? -1 : 1;
+                        if (aValue > bValue) return order === 'asc' ? 1 : -1;
+                        return 0;
+                    }
+                });
+                
+                // 生成HTML
+                tbody.innerHTML = filteredSongs.map((song, index) => {
+                    // 计算显示的序号（基于过滤后的数组）
+                    const displayIndex = index + 1;
+                    
+                    return `
+                        <tr data-song-id="${song.id}">
+                            <td>${displayIndex}</td>
+                            <td contenteditable="true" class="editable" data-field="name">${this.escapeHtml(song.name)}</td>
+                            <td contenteditable="true" class="editable" data-field="artist">${this.escapeHtml(song.artist || '')}</td>
+                            <td contenteditable="true" class="editable" data-field="album">${this.escapeHtml(song.album || '')}</td>
+                            <td contenteditable="true" class="editable" data-field="duration">${this.escapeHtml(song.duration || '')}</td>
+                            <td class="song-actions">
+                                <button class="action-btn delete-btn" title="删除歌曲">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                // 绑定编辑事件
+                this.bindEditEvents();
+                
+                // 绑定删除事件
+                this.bindDeleteEvents();
+            }
+
+            // 绑定编辑事件
+            bindEditEvents() {
+                const editableCells = document.querySelectorAll('.editable');
+                editableCells.forEach(cell => {
+                    let originalValue = cell.textContent;
+                    
+                    cell.addEventListener('blur', async (e) => {
+                        const newValue = e.target.textContent;
+                        if (newValue !== originalValue) {
+                            const songId = e.target.closest('tr').dataset.songId;
+                            const field = e.target.dataset.field;
+                            
+                            // 更新数据
+                            const song = this.currentSongs.find(s => s.id === songId);
+                            if (song) {
+                                song[field] = newValue;
+                                song.updatedAt = Date.now();
+                                this.isDirty = true;
+                                this.updateSaveButton();
+                                this.showToast('歌曲信息已更新', 'success');
+                            }
+                        }
+                    });
+                    
+                    cell.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.target.blur();
+                        }
+                    });
+                });
+            }
+
+            // 绑定删除事件
+            bindDeleteEvents() {
+                const deleteButtons = document.querySelectorAll('.delete-btn');
+                deleteButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const songId = e.target.closest('tr').dataset.songId;
+                        this.deleteSong(songId);
+                    });
+                });
+            }
+
+            // 更新保存按钮状态
+            updateSaveButton() {
+                const saveBtn = document.getElementById('saveBtn');
+                if (this.isDirty) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<span>保存（有未保存更改）</span>';
+                } else {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<span>保存</span>';
+                }
+            }
+
+            // 更新排序按钮状态
+            updateSortButtons() {
+                const sortButtons = document.querySelectorAll('.sort-btn');
+                sortButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.sort === this.sortConfig.key) {
+                        btn.classList.add('active');
+                        btn.textContent = btn.textContent.replace(' ✓', '') + ' ✓';
+                    } else {
+                        btn.textContent = btn.textContent.replace(' ✓', '');
+                    }
+                });
+            }
+
+            // 清空歌曲列表显示
+            clearSongList() {
+                const tbody = document.getElementById('songList');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                            请先选择或创建一个歌单
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // 启用控制按钮
+            enableControls() {
+                const controls = [
+                    'playlistSelect',
+                    'newPlaylistBtn',
+                    'renamePlaylistBtn', 
+                    'deletePlaylistBtn',
+                    'saveBtn',
+                    'songName',
+                    'artist',
+                    'album',
+                    'duration',
+                    'addSongBtn',
+                    'searchInput'
+                ];
+                
+                controls.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.disabled = false;
+                    }
+                });
+                
+                // 启用排序按钮
+                const sortButtons = document.querySelectorAll('.sort-btn');
+                sortButtons.forEach(btn => {
+                    btn.disabled = false;
+                });
+            }
+
+            // 显示Toast通知
+            showToast(message, type = 'info') {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.className = 'toast ' + type;
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // HTML转义
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // 绑定事件
+            bindEvents() {
+                // 新建歌单按钮
+                document.getElementById('newPlaylistBtn').addEventListener('click', () => {
+                    this.showNewPlaylistModal();
+                });
+                
+                // 重命名歌单按钮
+                document.getElementById('renamePlaylistBtn').addEventListener('click', () => {
+                    if (!this.currentPlaylist) {
+                        this.showToast('请先选择一个歌单', 'warning');
+                        return;
+                    }
+                    this.showRenamePlaylistModal();
+                });
+                
+                // 删除歌单按钮
+                document.getElementById('deletePlaylistBtn').addEventListener('click', () => {
+                    if (!this.currentPlaylist) {
+                        this.showToast('请先选择一个歌单', 'warning');
+                        return;
+                    }
+                    this.showDeleteConfirmModal();
+                });
+                
+                // 保存按钮
+                document.getElementById('saveBtn').addEventListener('click', async () => {
+                    await this.saveCurrentPlaylist();
+                });
+                
+                // 歌单选择
+                document.getElementById('playlistSelect').addEventListener('change', async (e) => {
+                    const fileName = e.target.value;
+                    if (!fileName) return;
+                    
+                    const playlist = this.playlists.find(p => p.fileName === fileName);
+                    if (playlist) {
+                        await this.loadPlaylist(playlist);
+                    }
+                });
+                
+                // 添加歌曲按钮
+                document.getElementById('addSongBtn').addEventListener('click', () => {
+                    const songName = document.getElementById('songName').value;
+                    const artist = document.getElementById('artist').value;
+                    const album = document.getElementById('album').value;
+                    const duration = document.getElementById('duration').value;
+                    
+                    try {
+                        this.addSong(songName, artist, album, duration);
+                    } catch (error) {
+                        this.showToast(error.message, 'error');
+                    }
+                });
+                
+                // 搜索输入
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.searchTerm = e.target.value;
+                    this.filterSongs();
+                });
+                
+                // 排序按钮
+                document.querySelectorAll('.sort-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sortKey = e.target.dataset.sort;
+                        // 切换排序顺序
+                        if (this.sortConfig.key === sortKey) {
+                            this.sortConfig.order = this.sortConfig.order === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            this.sortConfig.key = sortKey;
+                            this.sortConfig.order = 'asc';
+                        }
+                        this.sortSongs(sortKey, this.sortConfig.order);
+                    });
+                });
+                
+                // 新建歌单模态框
+                document.getElementById('confirmNewPlaylist').addEventListener('click', async () => {
+                    const name = document.getElementById('newPlaylistName').value;
+                    try {
+                        await this.createPlaylist(name);
+                        this.hideModal('newPlaylistModal');
+                        document.getElementById('newPlaylistName').value = '';
+                    } catch (error) {
+                        this.showToast(error.message, 'error');
+                    }
+                });
+                
+                document.getElementById('cancelNewPlaylist').addEventListener('click', () => {
+                    this.hideModal('newPlaylistModal');
+                });
+                
+                // 重命名歌单模态框
+                document.getElementById('confirmRenamePlaylist').addEventListener('click', async () => {
+                    const newName = document.getElementById('renamePlaylistName').value;
+                    try {
+                        await this.renamePlaylist(this.currentPlaylist, newName);
+                        this.hideModal('renamePlaylistModal');
+                        document.getElementById('renamePlaylistName').value = '';
+                    } catch (error) {
+                        this.showToast(error.message, 'error');
+                    }
+                });
+                
+                document.getElementById('cancelRenamePlaylist').addEventListener('click', () => {
+                    this.hideModal('renamePlaylistModal');
+                });
+                
+                // 删除确认模态框
+                document.getElementById('confirmDeletePlaylist').addEventListener('click', async () => {
+                    try {
+                        await this.deletePlaylist(this.currentPlaylist);
+                        this.hideModal('deleteConfirmModal');
+                    } catch (error) {
+                        this.showToast(error.message, 'error');
+                    }
+                });
+                
+                document.getElementById('cancelDeletePlaylist').addEventListener('click', () => {
+                    this.hideModal('deleteConfirmModal');
+                });
+                
+                // ESC键关闭模态框
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.hideAllModals();
+                    }
+                });
+                
+                // 页面关闭前检查未保存更改
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.isDirty) {
+                        e.preventDefault();
+                        e.returnValue = '有未保存的更改，确定要离开吗？';
+                        return e.returnValue;
+                    }
+                });
+            }
+
+            // 显示新建歌单模态框
+            showNewPlaylistModal() {
+                document.getElementById('newPlaylistName').value = '';
+                this.showModal('newPlaylistModal');
+                document.getElementById('newPlaylistName').focus();
+            }
+
+            // 显示重命名歌单模态框
+            showRenamePlaylistModal() {
+                if (!this.currentPlaylist) return;
+                document.getElementById('renamePlaylistName').value = this.currentPlaylist.playlistName;
+                this.showModal('renamePlaylistModal');
+                document.getElementById('renamePlaylistName').focus();
+            }
+
+            // 显示删除确认模态框
+            showDeleteConfirmModal() {
+                if (!this.currentPlaylist) return;
+                document.getElementById('playlistToDeleteName').textContent = this.currentPlaylist.playlistName;
+                this.showModal('deleteConfirmModal');
+            }
+
+            // 显示模态框
+            showModal(modalId) {
+                document.getElementById(modalId).classList.add('show');
+            }
+
+            // 隐藏模态框
+            hideModal(modalId) {
+                document.getElementById(modalId).classList.remove('show');
+            }
+
+            // 隐藏所有模态框
+            hideAllModals() {
+                document.querySelectorAll('.modal-overlay').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+            }
+
+            // 显示选择目录提示
+            showSelectDirectoryPrompt() {
+                // 创建一个提示用户选择目录的按钮
+                const container = document.querySelector('.control-panel');
+                const promptDiv = document.createElement('div');
+                promptDiv.id = 'directory-prompt';
+                promptDiv.innerHTML = `
+                    <div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                        <p style="margin: 0 0 15px 0; font-weight: bold; color: #1976d2;">请先选择歌单保存文件夹</p>
+                        <button id="select-directory-btn" class="btn btn-primary">选择文件夹</button>
+                    </div>
+                `;
+                container.parentNode.insertBefore(promptDiv, container);
+                
+                // 绑定按钮事件
+                document.getElementById('select-directory-btn').addEventListener('click', async () => {
+                    try {
+                        await this.selectProjectDirectory();
+                        promptDiv.remove();
+                    } catch (error) {
+                        if (error.name !== 'AbortError') {
+                            this.showToast('选择目录失败: ' + error.message, 'error');
+                        }
+                    }
+                });
+            }
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查浏览器支持
+            if (!('showDirectoryPicker' in window)) {
+                alert('您的浏览器不支持 File System Access API，请使用 Chrome 86+ 或 Edge 86+');
+                return;
+            }
+            
+            if (!('indexedDB' in window)) {
+                alert('您的浏览器不支持 IndexedDB，请使用现代浏览器');
+                return;
+            }
+            
+            // 创建应用实例
+            const app = new PlaylistManager();
+            
+            // 挂载到全局对象以便调试
+            window.playlistManager = app;
+        });
+    </script>
+</body>
+</html>
